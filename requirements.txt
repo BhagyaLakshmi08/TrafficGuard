@@ -1,0 +1,8 @@
+Flask
+gunicorn
+opencv-python-headless
+easyocr
+numpy
+ultralytics
+pymongo
+python-dotenv
