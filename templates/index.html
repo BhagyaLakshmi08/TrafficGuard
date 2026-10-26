@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TrafficGuard | AI Traffic Monitoring</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <header class="topbar">
+        <div>
+            <h1>TrafficGuard</h1>
+            <p>AI Traffic Monitoring &amp; E-Challan Management</p>
+        </div>
+        <span class="status"><span class="dot"></span> Dashboard Online</span>
+    </header>
+
+    <main class="container">
+        <section class="welcome">
+            <div>
+                <h2>Traffic Monitoring Dashboard</h2>
+                <p>Upload a traffic video to detect number plates, run OCR, and check registered vehicle information.</p>
+            </div>
+        </section>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, message in messages %}
+              <div class="notice {{ category }}" role="status">{{ message }}</div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+
+        <section class="panel">
+            <div class="panel-heading">
+                <div>
+                    <h2>Upload Traffic Video</h2>
+                    <p>Choose a video from your computer to start number-plate recognition.</p>
+                </div>
+                <span class="tag">MP4 / AVI</span>
+            </div>
+            <form action="{{ url_for('upload_video') }}" method="post" enctype="multipart/form-data" class="upload-form">
+                <label for="video">Traffic video</label>
+                <input id="video" type="file" name="video" accept="video/mp4,video/x-msvideo,video/quicktime,video/x-matroska,.mpeg,.mpg" required>
+                <small>Maximum upload size: 100 MB. Short clips are recommended on free hosting.</small>
+                <small>Helmet violation detection works only when a compatible trained helmet_detector.pt model is installed.</small>
+                <button type="submit">Upload &amp; Process Video</button>
+            </form>
+        </section>
+
+        <section class="panel">
+            <div class="panel-heading">
+                <div>
+                    <h2>Number Plate Recognition Video</h2>
+                    <p>Annotated detections, OCR text, confidence, and exact owner lookup status.</p>
+                </div>
+                <span class="tag">MP4</span>
+            </div>
+            {% if video_exists %}
+                <video controls preload="metadata" playsinline>
+                    <source src="{{ url_for('processed_video') }}" type="video/mp4">
+                    Your browser does not support HTML video.
+                </video>
+                <p class="hint">Green labels indicate an owner record was found. Red labels indicate no exact match or a database error. Orange labels indicate low confidence or an unreadable plate. Verify OCR and evidence before taking action.</p>
+            {% else %}
+                <div class="empty-state">
+                    <span>🎥</span>
+                    <h3>No processed video yet</h3>
+                    <p>Upload a traffic video above. The app will display the annotated result here after processing.</p>
+                </div>
+            {% endif %}
+        </section>
+
+        <section class="panel">
+            <div class="panel-heading">
+                <div>
+                    <h2>Vehicle Lookup</h2>
+                    <p>Search the registered MongoDB vehicle database.</p>
+                </div>
+            </div>
+            <form action="{{ url_for('lookup') }}" method="get" class="search-form">
+                <input type="text" name="plate" placeholder="Enter registration number" aria-label="Vehicle registration number" required>
+                <button type="submit">Search Vehicle</button>
+            </form>
+            {% if lookup_done %}
+                {% if owner %}
+                    <div class="result success">
+                        <h3>Vehicle Record Found</h3>
+                        <p><strong>Plate:</strong> {{ owner.get('vehicle_number', 'Not listed') }}</p>
+                        <p><strong>Owner:</strong> {{ owner.get('owner_name', 'Not listed') }}</p>
+                        <p><strong>Phone:</strong> {{ owner.get('phone_number', 'Not listed') }}</p>
+                        <p><strong>Vehicle type:</strong> {{ owner.get('vehicle_type', 'Not listed') }}</p>
+                    </div>
+                {% else %}
+                    <div class="result warning">
+                        <h3>No Matching Vehicle Record</h3>
+                        <p>No exact matching record was found. Check the plate text and registered database.</p>
+                    </div>
+                {% endif %}
+            {% endif %}
+        </section>
+
+        <section class="panel">
+            <div class="panel-heading">
+                <div>
+                    <h2>System Components</h2>
+                    <p>Technologies used in this academic prototype.</p>
+                </div>
+            </div>
+            <section class="stats">
+                <article class="stat-card"><span class="stat-icon">🚘</span><p>Plate Detection</p><h3>YOLO</h3><small>Custom plate detector</small></article>
+                <article class="stat-card"><span class="stat-icon">🔠</span><p>Plate Recognition</p><h3>EasyOCR</h3><small>Reads plate text</small></article>
+                <article class="stat-card"><span class="stat-icon">🗄️</span><p>Vehicle Database</p><h3>MongoDB</h3><small>Registered owner records</small></article>
+                <article class="stat-card"><span class="stat-icon">🌐</span><p>Web Dashboard</p><h3>Flask</h3><small>Upload and view results</small></article>
+            </section>
+        </section>
+
+        <footer><p>TrafficGuard · Academic project prototype · Verify evidence and violations before issuing a challan.</p></footer>
+    </main>
+</body>
+</html>
