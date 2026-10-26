@@ -58,26 +58,36 @@ def looks_like_plate(text):
     return has_letter and has_digit
 
 
+
 # --------------------------------------------------
-# 3. LOAD MODELS
+# 3. LOAD MODELS ONLY WHEN NEEDED
 # --------------------------------------------------
 
-print("Loading number-plate detector...")
-model = YOLO(str(MODEL_PATH))
-
-print("Loading EasyOCR...")
-reader = easyocr.Reader(["en"], gpu=False)
-
-# Helmet violation detection requires a separate YOLO model trained with
-# a class such as "no_helmet", "without_helmet", or "helmetless".
+model = None
+reader = None
 helmet_model = None
-if HELMET_MODEL_PATH.exists():
-    print("Loading helmet violation detector...")
-    helmet_model = YOLO(str(HELMET_MODEL_PATH))
-else:
-    print("WARNING: helmet_detector.pt not found; helmet violations are DISABLED.")
 
-print("Models loaded successfully.")
+
+def load_models():
+    global model, reader, helmet_model
+
+    if model is not None and reader is not None:
+        return
+
+    print("Loading number-plate detector...")
+    model = YOLO(str(MODEL_PATH))
+
+    print("Loading EasyOCR...")
+    reader = easyocr.Reader(["en"], gpu=False)
+
+    if HELMET_MODEL_PATH.exists():
+        print("Loading helmet violation detector...")
+        helmet_model = YOLO(str(HELMET_MODEL_PATH))
+    else:
+        print("Helmet detector disabled: model file not found.")
+
+    print("Models loaded successfully.")
+
 
 
 # --------------------------------------------------
@@ -242,6 +252,7 @@ def main(video_path=None, output_video=None, crop_dir=None):
     output_video_path = Path(output_video) if output_video else DEFAULT_OUTPUT_VIDEO
     crop_dir_path = Path(crop_dir) if crop_dir else CROP_DIR
 
+    load_models()
     output_video_path.parent.mkdir(parents=True, exist_ok=True)
     crop_dir_path.mkdir(parents=True, exist_ok=True)
 
